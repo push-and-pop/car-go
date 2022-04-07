@@ -4,7 +4,7 @@ import "gorm.io/gorm"
 
 type User struct {
 	gorm.Model
-	Phone string `gorm:"index",size:"10`
+	Phone string `gorm:"index,size:10"`
 	Name  string
 }
 
