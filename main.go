@@ -1,6 +1,7 @@
 package main
 
 import (
+	"car-go/router"
 	"car-go/schema"
 	"car-go/util"
 
@@ -10,6 +11,7 @@ import (
 func main() {
 	util.ReadConfig()
 	engine := gin.Default()
+	router.RegisterRouter(engine)
 	schema.LinkDb()
-	engine.Run()
+	engine.Run(":9090")
 }
