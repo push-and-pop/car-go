@@ -1,0 +1,5 @@
+mysql:
+  user: "root"
+  password: ""
+  db: "car"
+  addr: "localhost:3306"
