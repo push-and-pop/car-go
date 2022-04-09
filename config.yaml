@@ -1,5 +1,0 @@
-mysql:
-  user: "root"
-  password: "lantian"
-  db: "car"
-  addr: "localhost:3306"
