@@ -3,6 +3,7 @@ package login
 import (
 	. "car-go/schema"
 	"car-go/schema/model"
+	"car-go/util/token"
 	"errors"
 
 	"github.com/gin-gonic/gin"
@@ -36,7 +37,17 @@ func Login(c *gin.Context) {
 			return
 		}
 	}
+	token, err := token.GenToken(req.Phone)
+	if err != nil {
+		c.JSON(400, gin.H{
+			"err": err,
+		})
+		return
+	}
 	c.JSON(200, gin.H{
+		"data": gin.H{
+			"token": token,
+		},
 		"code": 200,
 	})
 }
