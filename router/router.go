@@ -14,7 +14,8 @@ func RegisterRouter(e *gin.Engine) {
 	group := e.Group("/api/v1")
 	{
 		initLogin(group)
-		group.Use(middleware.BeforeRoute())
+		_ = middleware.BeforeRoute()
+		//	group.Use(middleware.BeforeRoute())
 		initMessage(group)
 		initAnnounce(group)
 		initPark(group)
