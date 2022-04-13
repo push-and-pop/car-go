@@ -7,6 +7,7 @@ type UserMessage struct {
 	IdCard string `json:"id_card"`
 }
 
+//上传信息
 func RegisterMessage(c *gin.Context) {
 	req := &UserMessage{}
 	err := c.ShouldBindJSON(req)

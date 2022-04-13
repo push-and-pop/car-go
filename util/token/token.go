@@ -38,6 +38,9 @@ func ParseToken(tokenStr string) (Claim, error) {
 		// hmacSampleSecret is a []byte containing your secret, e.g. []byte("my_secret_key")
 		return secretKey, nil
 	})
+	if err != nil {
+		return Claim{}, err
+	}
 
 	if claims, ok := token.Claims.(Claim); ok && token.Valid {
 		return claims, nil

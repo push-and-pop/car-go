@@ -24,5 +24,5 @@ func LinkDb() {
 	if err != nil {
 		panic(err)
 	}
-	Db.AutoMigrate(model.User{})
+	Db.AutoMigrate(model.User{}, model.Announce{}, model.CarPark{})
 }
