@@ -4,6 +4,7 @@ import (
 	"car-go/controller/announcement"
 	"car-go/controller/login"
 	"car-go/controller/message"
+	"car-go/middleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -12,9 +13,11 @@ func RegisterRouter(e *gin.Engine) {
 	group := e.Group("/api/v1")
 	{
 		initLogin(group)
+		group.Use(middleware.BeforeRoute())
 		initMessage(group)
 		initAnnounce(group)
 	}
+
 }
 
 //登录

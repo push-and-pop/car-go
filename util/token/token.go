@@ -28,7 +28,7 @@ func GenToken(phone string) (string, error) {
 	return tokenStr, nil
 }
 
-func ParseToken(tokenStr string) {
+func ParseToken(tokenStr string) (Claim, error) {
 	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
 		// Don't forget to validate the alg is what you expect:
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -40,8 +40,8 @@ func ParseToken(tokenStr string) {
 	})
 
 	if claims, ok := token.Claims.(Claim); ok && token.Valid {
-		fmt.Println(claims)
+		return claims, nil
 	} else {
-		fmt.Println(err)
+		return claims, err
 	}
 }
