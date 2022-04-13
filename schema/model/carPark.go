@@ -7,12 +7,12 @@ type CarPark struct {
 	Location     string `gorm:"uniqueIndex:location_number;size:100"`
 	Number       int32  `gorm:"uniqueIndex:location_number"`
 	ParkState    int32
-	TimeInterval map[int64]TimeInterval
+	TimeInterval string
 }
 
-type TimeInterval struct {
-	StartTime int64
-	EndTime   int64
+type TimeInterval map[int64]struct {
+	StartTime int64 `json:"start_time"`
+	EndTime   int64 `json:"end_time"`
 }
 
 func (u *CarPark) TableName() string {
