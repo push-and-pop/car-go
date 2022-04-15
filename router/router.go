@@ -13,6 +13,7 @@ import (
 func RegisterRouter(e *gin.Engine) {
 	group := e.Group("/api/v1")
 	{
+		group.Use(middleware.Cors())
 		initLogin(group)
 		_ = middleware.BeforeRoute()
 		//	group.Use(middleware.BeforeRoute())
