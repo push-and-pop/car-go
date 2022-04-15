@@ -12,6 +12,8 @@ type User struct {
 	Role int32
 	//审核状态
 	CheckState int32
+	//账户余额
+	Account int64
 }
 
 func (u *User) TableName() string {
