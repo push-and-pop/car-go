@@ -11,9 +11,10 @@ import (
 )
 
 func RegisterRouter(e *gin.Engine) {
-	group := e.Group("")
+	e.Use(middleware.Cors())
+	group := e.Group("/api")
 	{
-		group.Use(middleware.Cors())
+		//group.Use(middleware.Cors())
 		initLogin(group)
 		_ = middleware.BeforeRoute()
 		//	group.Use(middleware.BeforeRoute())
