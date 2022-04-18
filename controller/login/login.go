@@ -3,6 +3,7 @@ package login
 import (
 	. "car-go/schema"
 	"car-go/schema/model"
+	"car-go/util"
 	"car-go/util/token"
 	"errors"
 
@@ -27,9 +28,12 @@ func Login(c *gin.Context) {
 	user := model.User{}
 	err = Db.Where("phone = ?", req.Phone).First(&user).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		err = Db.Create(&model.User{
-			Phone: req.Phone,
-		}).Error
+		user = model.User{
+			Phone:   req.Phone,
+			Role:    util.User,
+			Account: 0,
+		}
+		err = Db.Create(&user).Error
 		if err != nil {
 			c.JSON(400, gin.H{
 				"err": err,
@@ -46,7 +50,8 @@ func Login(c *gin.Context) {
 	}
 	c.JSON(200, gin.H{
 		"data": gin.H{
-			"token": token,
+			"token":     token,
+			"user_info": user,
 		},
 		"code": 200,
 	})

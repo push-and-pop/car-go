@@ -16,8 +16,8 @@ func RegisterRouter(e *gin.Engine) {
 	{
 		//group.Use(middleware.Cors())
 		initLogin(group)
-		_ = middleware.BeforeRoute()
-		//	group.Use(middleware.BeforeRoute())
+		//_ = middleware.BeforeRoute()
+		group.Use(middleware.BeforeRoute())
 		initMessage(group)
 		initAnnounce(group)
 		initPark(group)
