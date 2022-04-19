@@ -16,6 +16,10 @@ type LoginReq struct {
 	VerifyCode string `json:"verify_code"`
 }
 
+type LoginRsp struct {
+	Token string `json:"token"`
+}
+
 func Login(c *gin.Context) {
 	req := &LoginReq{}
 	err := c.ShouldBindJSON(req)
