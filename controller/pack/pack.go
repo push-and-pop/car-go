@@ -24,7 +24,20 @@ func GetParkList(c *gin.Context) {
 		return
 	}
 	park := []model.CarPark{}
-	err := Db.Offset(int(offset)).Limit(int(limit)).Find(&announce).Error
+	err := Db.Offset(int(offset)).Limit(int(limit)).Find(&park).Error
+	if err != nil {
+		c.JSON(400, gin.H{
+			"err": err,
+		})
+		return
+	}
+	c.JSON(200, gin.H{
+		"code": 200,
+		"data": gin.H{
+			"total": len(park),
+			"park":  park,
+		},
+	})
 }
 
 type CreatCarParkReq struct {
@@ -51,5 +64,32 @@ func CreatCarPark(c *gin.Context) {
 	c.JSON(200, gin.H{
 		"code": 200,
 		"msg":  "创建成功",
+	})
+
+}
+
+type DeleteParkReq struct {
+	Id int64 `json:"id"`
+}
+
+func DeleteParkById(c *gin.Context) {
+	req := &DeleteParkReq{}
+	err := c.ShouldBindJSON(req)
+	if err != nil {
+		c.JSON(400, gin.H{
+			"err": err,
+		})
+		return
+	}
+	err = Db.Delete(&model.CarPark{}, req.Id).Error
+	if err != nil {
+		c.JSON(400, gin.H{
+			"err": err,
+		})
+		return
+	}
+	c.JSON(200, gin.H{
+		"code": 200,
+		"msg":  "删除成功",
 	})
 }
