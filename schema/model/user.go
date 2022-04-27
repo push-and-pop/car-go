@@ -14,6 +14,8 @@ type User struct {
 	CheckState int32
 	//账户余额
 	Account int64
+	//车辆状态
+	CarState int32
 }
 
 func (u *User) TableName() string {

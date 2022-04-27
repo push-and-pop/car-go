@@ -33,9 +33,10 @@ func Login(c *gin.Context) {
 	err = Db.Where("phone = ?", req.Phone).First(&user).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		user = model.User{
-			Phone:   req.Phone,
-			Role:    util.User,
-			Account: 0,
+			Phone:    req.Phone,
+			Role:     util.User,
+			Account:  0,
+			CarState: util.OutPark,
 		}
 		err = Db.Create(&user).Error
 		if err != nil {
