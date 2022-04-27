@@ -83,9 +83,27 @@ func EnterPark(c *gin.Context) {
 }
 
 type ReserveParkReq struct {
+	Location string `json:"location"`
+	Number   int32  `json:"number"`
 }
 
 //预定车位，形成完整订单，并需要支付订单
 func ReservePark(c *gin.Context) {
-
+	req := &ReserveParkReq{}
+	err := c.ShouldBindJSON(req)
+	if err != nil {
+		c.JSON(400, gin.H{
+			"err": err,
+		})
+		return
+	}
+	phone := c.GetString("phone")
+	user := model.User{}
+	err = Db.Where("phone = ?", phone).First(&user).Error
+	if err != nil {
+		c.JSON(400, gin.H{
+			"err": err,
+		})
+		return
+	}
 }
