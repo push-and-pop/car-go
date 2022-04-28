@@ -111,7 +111,14 @@ func LeavePark(c *gin.Context) {
 		})
 		return
 	}
-
+	park := model.CarPark{}
+	err = tx.Where("location = ? and number = ?", req.Location, req.Number).First(&park).Error
+	if err != nil {
+		c.JSON(400, gin.H{
+			"err": err,
+		})
+		return
+	}
 	tx.Commit()
 	c.JSON(200, gin.H{
 		"code": 200,

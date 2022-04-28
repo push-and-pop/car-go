@@ -5,7 +5,7 @@ import "gorm.io/gorm"
 type Order struct {
 	gorm.Model
 	//订单类型
-	Type int32
+	Type int32 `gorm:"Index:type_userId_packId"`
 	//订单状态
 	State int32
 	//用户id
