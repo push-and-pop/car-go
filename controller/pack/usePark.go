@@ -6,6 +6,7 @@ import (
 	"car-go/schema/model"
 	"car-go/util"
 	"car-go/util/json"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -34,7 +35,14 @@ func EnterPark(c *gin.Context) {
 		})
 		return
 	}
-
+	user.CarState = util.InPark
+	err = Db.Save(&user).Error
+	if err != nil {
+		c.JSON(400, gin.H{
+			"err": err,
+		})
+		return
+	}
 	park := model.CarPark{}
 	err = Db.Where("location = ? and number = ?", req.Location, req.Number).First(&park).Error
 	if err != nil {
@@ -59,9 +67,11 @@ func EnterPark(c *gin.Context) {
 		return
 	}
 	order := model.Order{
-		Type:   order.Continue,
-		State:  order.Going,
-		PackId: park.ID,
+		Type:    order.Continue,
+		State:   order.Going,
+		UserId:  user.ID,
+		PackId:  park.ID,
+		StartAt: time.Now().Unix(),
 	}
 	err = Db.Create(&order).Error
 	if err != nil {
@@ -76,6 +86,39 @@ func EnterPark(c *gin.Context) {
 	})
 }
 
+type LeaveParkReq struct {
+	Location string `json:"location"`
+	Number   int32  `json:"number"`
+}
+
+//出库，订单变化，需要支付
+func LeavePark(c *gin.Context) {
+	req := &LeaveParkReq{}
+	err := c.ShouldBindJSON(req)
+	if err != nil {
+		c.JSON(400, gin.H{
+			"err": err,
+		})
+		return
+	}
+	tx := Db.Begin()
+	phone := c.GetString("phone")
+	user := model.User{}
+	err = tx.Where("phone = ?", phone).First(&user).Error
+	if err != nil {
+		c.JSON(400, gin.H{
+			"err": err,
+		})
+		return
+	}
+
+	tx.Commit()
+	c.JSON(200, gin.H{
+		"code": 200,
+		"msg":  "出库成功",
+	})
+}
+
 type ReserveParkReq struct {
 	Location  string `json:"location"`
 	Number    int32  `json:"number"`
@@ -83,7 +126,7 @@ type ReserveParkReq struct {
 	EndTime   int64  `json:"end_time"`
 }
 
-//预定车位，形成完整订单，并需要支付订单
+//预定车位，形成完整订单，只能预定第二天以后的车位，并需要支付订单，30分钟后未支付订单，订单消失
 func ReservePark(c *gin.Context) {
 	req := &ReserveParkReq{}
 	err := c.ShouldBindJSON(req)
@@ -149,9 +192,12 @@ func ReservePark(c *gin.Context) {
 		return
 	}
 	order := model.Order{
-		Type:   order.Whole,
-		State:  order.UnPay,
-		PackId: park.ID,
+		Type:    order.Whole,
+		State:   order.UnPay,
+		PackId:  park.ID,
+		StartAt: req.StartTime,
+		EndAt:   req.EndTime,
+		Price:   (req.EndTime - req.StartTime) / 3600 * order.Price,
 	}
 	err = tx.Create(&order).Error
 	if err != nil {

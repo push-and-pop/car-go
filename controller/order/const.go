@@ -10,3 +10,7 @@ const (
 	Continue = iota + 1 //持续
 	Whole               //完整
 )
+
+const (
+	Price = 3 //每小时停车费
+)
