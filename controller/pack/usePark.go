@@ -4,6 +4,7 @@ import (
 	"car-go/controller/order"
 	. "car-go/schema"
 	"car-go/schema/model"
+	"car-go/util"
 	"car-go/util/json"
 
 	"github.com/gin-gonic/gin"
@@ -42,14 +43,7 @@ func EnterPark(c *gin.Context) {
 		})
 		return
 	}
-	var interval model.TimeInterval
-	err = json.Unmarshal([]byte(park.TimeInterval), &interval)
-	if err != nil {
-		c.JSON(400, gin.H{
-			"err": err,
-		})
-		return
-	}
+
 	if park.ParkState == Useing {
 		c.JSON(400, gin.H{
 			"err": "park is using",
@@ -83,15 +77,17 @@ func EnterPark(c *gin.Context) {
 }
 
 type ReserveParkReq struct {
-	Location string `json:"location"`
-	Number   int32  `json:"number"`
+	Location  string `json:"location"`
+	Number    int32  `json:"number"`
+	StartTime int64  `json:"start_time"`
+	EndTime   int64  `json:"end_time"`
 }
 
 //预定车位，形成完整订单，并需要支付订单
 func ReservePark(c *gin.Context) {
 	req := &ReserveParkReq{}
 	err := c.ShouldBindJSON(req)
-	if err != nil {
+	if err != nil || req.StartTime >= req.EndTime {
 		c.JSON(400, gin.H{
 			"err": err,
 		})
@@ -99,11 +95,75 @@ func ReservePark(c *gin.Context) {
 	}
 	phone := c.GetString("phone")
 	user := model.User{}
-	err = Db.Where("phone = ?", phone).First(&user).Error
+	tx := Db.Begin()
+	err = tx.Where("phone = ?", phone).First(&user).Error
 	if err != nil {
 		c.JSON(400, gin.H{
 			"err": err,
 		})
 		return
 	}
+	park := model.CarPark{}
+	err = tx.Where("location = ? and number = ?", req.Location, req.Number).First(&park).Error
+	if err != nil {
+		c.JSON(400, gin.H{
+			"err": err,
+		})
+		return
+	}
+	var interval model.TimeInterval
+	err = json.Unmarshal([]byte(park.TimeInterval), &interval)
+	if err != nil {
+		c.JSON(400, gin.H{
+			"err": err,
+		})
+		return
+	}
+	if !util.HasNoIntersection(interval, req.StartTime, req.EndTime) {
+		c.JSON(400, gin.H{
+			"err": "时间段内已被预定",
+		})
+		return
+	}
+	interval[req.StartTime] = struct {
+		StartTime int64 "json:\"start_time\""
+		EndTime   int64 "json:\"end_time\""
+	}{
+		StartTime: req.StartTime,
+		EndTime:   req.EndTime,
+	}
+	intervalByte, err := json.Marshal(&interval)
+	if err != nil {
+		c.JSON(400, gin.H{
+			"err": err,
+		})
+		return
+	}
+	park.TimeInterval = string(intervalByte)
+	err = tx.Save(&park).Error
+	if err != nil {
+		tx.Rollback()
+		c.JSON(400, gin.H{
+			"err": err,
+		})
+		return
+	}
+	order := model.Order{
+		Type:   order.Whole,
+		State:  order.UnPay,
+		PackId: park.ID,
+	}
+	err = tx.Create(&order).Error
+	if err != nil {
+		tx.Rollback()
+		c.JSON(400, gin.H{
+			"err": err,
+		})
+		return
+	}
+	tx.Commit()
+	c.JSON(200, gin.H{
+		"code": 200,
+		"msg":  "预定成功",
+	})
 }

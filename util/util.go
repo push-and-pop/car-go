@@ -1,6 +1,10 @@
 package util
 
-import "github.com/spf13/viper"
+import (
+	"car-go/schema/model"
+
+	"github.com/spf13/viper"
+)
 
 func ReadConfig() {
 	viper.SetConfigName("config")
@@ -12,4 +16,14 @@ func ReadConfig() {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func HasNoIntersection(interval model.TimeInterval, start, end int64) bool {
+	for _, value := range interval {
+		if start >= value.EndTime || end <= value.StartTime {
+			continue
+		}
+		return false
+	}
+	return true
 }
