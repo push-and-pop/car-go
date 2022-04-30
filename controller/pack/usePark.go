@@ -181,7 +181,7 @@ func ReservePark(c *gin.Context) {
 	err := c.ShouldBindJSON(req)
 	if err != nil || req.StartTime >= req.EndTime {
 		c.JSON(400, gin.H{
-			"err": err,
+			"err": err.Error(),
 		})
 		return
 	}
