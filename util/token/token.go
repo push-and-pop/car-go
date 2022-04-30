@@ -2,6 +2,7 @@ package token
 
 import (
 	"fmt"
+	"reflect"
 	"time"
 
 	"github.com/golang-jwt/jwt"
@@ -11,6 +12,7 @@ var secretKey = []byte("夏天夏天悄悄过去留下小秘密")
 
 type Claim struct {
 	jwt.StandardClaims
+	Version string
 }
 
 func GenToken(phone string) (string, error) {
@@ -19,6 +21,7 @@ func GenToken(phone string) (string, error) {
 			Issuer:   phone,
 			IssuedAt: time.Now().Unix(),
 		},
+		"v1",
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claim)
 	tokenStr, err := token.SignedString(secretKey)
@@ -28,7 +31,7 @@ func GenToken(phone string) (string, error) {
 	return tokenStr, nil
 }
 
-func ParseToken(tokenStr string) (Claim, error) {
+func ParseToken(tokenStr string) (jwt.MapClaims, error) {
 	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
 		// Don't forget to validate the alg is what you expect:
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -39,10 +42,10 @@ func ParseToken(tokenStr string) (Claim, error) {
 		return secretKey, nil
 	})
 	if err != nil {
-		return Claim{}, err
+		return jwt.MapClaims{}, err
 	}
 
-	if claims, ok := token.Claims.(Claim); ok && token.Valid {
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		return claims, nil
 	} else {
 		return claims, err

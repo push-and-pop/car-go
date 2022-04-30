@@ -20,7 +20,7 @@ func BeforeRoute() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		c.Set("phone", claim.Issuer)
+		c.Set("phone", claim["Issuer"])
 		fmt.Println(claim)
 		c.Next()
 	}
