@@ -2,7 +2,6 @@ package token
 
 import (
 	"fmt"
-	"reflect"
 	"time"
 
 	"github.com/golang-jwt/jwt"

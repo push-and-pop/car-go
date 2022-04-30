@@ -49,14 +49,14 @@ func initAnnounce(r *gin.RouterGroup) {
 func initPark(r *gin.RouterGroup) {
 	r.POST("/park/creat", pack.CreatCarPark)
 	r.GET("/park/get", pack.GetParkList)
-	r.POST("/pack/delete", pack.DeleteParkById)
+	r.POST("/park/delete", pack.DeleteParkById)
 }
 
 //用户车位
 func initUserPark(r *gin.RouterGroup) {
 	r.POST("/park/enter", pack.EnterPark)
 	r.POST("/park/leave", pack.LeavePark)
-	r.POST("/pack/reserve", pack.ReservePark)
+	r.POST("/park/reserve", pack.ReservePark)
 }
 
 func initUser(r *gin.RouterGroup) {
