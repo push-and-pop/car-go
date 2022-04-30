@@ -28,7 +28,8 @@ func EnterPark(c *gin.Context) {
 	}
 	phone := c.GetString("phone")
 	user := model.User{}
-	err = Db.Where("phone = ?", phone).First(&user).Error
+	tx := Db.Begin()
+	err = tx.Where("phone = ?", phone).First(&user).Error
 	if err != nil {
 		c.JSON(400, gin.H{
 			"err": err,
@@ -36,7 +37,7 @@ func EnterPark(c *gin.Context) {
 		return
 	}
 	user.CarState = util.InPark
-	err = Db.Save(&user).Error
+	err = tx.Save(&user).Error
 	if err != nil {
 		c.JSON(400, gin.H{
 			"err": err,
@@ -44,7 +45,7 @@ func EnterPark(c *gin.Context) {
 		return
 	}
 	park := model.CarPark{}
-	err = Db.Where("location = ? and number = ?", req.Location, req.Number).First(&park).Error
+	err = tx.Where("location = ? and number = ?", req.Location, req.Number).First(&park).Error
 	if err != nil {
 		c.JSON(400, gin.H{
 			"err": err,
@@ -58,14 +59,7 @@ func EnterPark(c *gin.Context) {
 		})
 		return
 	}
-	park.ParkState = Useing
-	err = Db.Save(&park).Error
-	if err != nil {
-		c.JSON(400, gin.H{
-			"err": err,
-		})
-		return
-	}
+
 	order := model.Order{
 		Type:    order.Continue,
 		State:   order.Going,
@@ -73,13 +67,23 @@ func EnterPark(c *gin.Context) {
 		PackId:  park.ID,
 		StartAt: time.Now().Unix(),
 	}
-	err = Db.Create(&order).Error
+	err = tx.Create(&order).Error
 	if err != nil {
 		c.JSON(400, gin.H{
 			"err": err,
 		})
 		return
 	}
+	park.ParkState = Useing
+	park.OrderId = order.ID
+	err = tx.Save(&park).Error
+	if err != nil {
+		c.JSON(400, gin.H{
+			"err": err,
+		})
+		return
+	}
+	tx.Commit()
 	c.JSON(200, gin.H{
 		"code": 200,
 		"msg":  "入库成功",
@@ -114,6 +118,44 @@ func LeavePark(c *gin.Context) {
 	park := model.CarPark{}
 	err = tx.Where("location = ? and number = ?", req.Location, req.Number).First(&park).Error
 	if err != nil {
+		c.JSON(400, gin.H{
+			"err": err,
+		})
+		return
+	}
+	Order := model.Order{}
+	err = tx.Where("id = ?", park.OrderId).First(&Order).Error
+	if err != nil {
+		c.JSON(400, gin.H{
+			"err": err,
+		})
+		return
+	}
+	now := time.Now().Unix()
+	Order.EndAt = now
+	Order.Price = (now - Order.StartAt) / 3600 * order.Price
+	Order.State = order.UnPay
+	err = tx.Save(&Order).Error
+	if err != nil {
+		tx.Rollback()
+		c.JSON(400, gin.H{
+			"err": err,
+		})
+		return
+	}
+	user.CarState = util.OutPark
+	err = tx.Save(&user).Error
+	if err != nil {
+		tx.Rollback()
+		c.JSON(400, gin.H{
+			"err": err,
+		})
+		return
+	}
+	park.ParkState = Open
+	err = tx.Save(&park).Error
+	if err != nil {
+		tx.Rollback()
 		c.JSON(400, gin.H{
 			"err": err,
 		})

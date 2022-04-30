@@ -11,7 +11,6 @@ import (
 func BeforeRoute() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tokenStr := c.GetHeader("Authorization")
-		fmt.Println(tokenStr)
 		claim, err := token.ParseToken(tokenStr)
 		if err != nil {
 			c.JSON(401, gin.H{
@@ -22,6 +21,7 @@ func BeforeRoute() gin.HandlerFunc {
 			return
 		}
 		c.Set("phone", claim.Issuer)
+		fmt.Println(claim)
 		c.Next()
 	}
 }

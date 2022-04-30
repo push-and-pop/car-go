@@ -7,6 +7,7 @@ type CarPark struct {
 	Location     string `gorm:"uniqueIndex:location_number;size:100"`
 	Number       int32  `gorm:"uniqueIndex:location_number"`
 	ParkState    int32
+	OrderId      uint
 	TimeInterval string
 }
 
