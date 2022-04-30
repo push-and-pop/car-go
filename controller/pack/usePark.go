@@ -207,7 +207,7 @@ func ReservePark(c *gin.Context) {
 	err = json.Unmarshal([]byte(park.TimeInterval), &interval)
 	if err != nil {
 		c.JSON(400, gin.H{
-			"err": err,
+			"err": err.Error(),
 		})
 		return
 	}

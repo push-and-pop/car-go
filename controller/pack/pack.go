@@ -3,6 +3,7 @@ package pack
 import (
 	. "car-go/schema"
 	"car-go/schema/model"
+	"car-go/util/json"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -54,7 +55,15 @@ func CreatCarPark(c *gin.Context) {
 		})
 		return
 	}
-	err = Db.Create(&model.CarPark{Location: req.Location, Number: req.Number, ParkState: Open}).Error
+	intervale := make(model.TimeInterval)
+	bytes, err := json.Marshal(&intervale)
+	if err != nil {
+		c.JSON(400, gin.H{
+			"err": err.Error(),
+		})
+		return
+	}
+	err = Db.Create(&model.CarPark{Location: req.Location, Number: req.Number, ParkState: Open, TimeInterval: string(bytes)}).Error
 	if err != nil {
 		c.JSON(400, gin.H{
 			"err": err,
