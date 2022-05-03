@@ -18,6 +18,11 @@ type User struct {
 	CarState int32
 	//车位Id
 	PackId uint
+	//车牌号
+	CarNumber  string
+	UserName   string `gorm:"uniqueIndex;size:100"`
+	Password   string
+	IsComplete bool
 }
 
 func (u *User) TableName() string {

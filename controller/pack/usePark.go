@@ -27,9 +27,9 @@ func EnterPark(c *gin.Context) {
 		})
 		return
 	}
-	phone := c.GetString("phone")
+	userName := c.GetString("userName")
 	user := model.User{}
-	err = Db.Where("phone = ?", phone).First(&user).Error
+	err = Db.Where("user_name = ?", userName).First(&user).Error
 	if err != nil {
 		c.JSON(400, gin.H{
 			"err": err,
@@ -106,9 +106,9 @@ func LeavePark(c *gin.Context) {
 		return
 	}
 	tx := Db.Begin()
-	phone := c.GetString("phone")
+	userName := c.GetString("userName")
 	user := model.User{}
-	err = tx.Where("phone = ?", phone).First(&user).Error
+	err = tx.Where("user_name = ?", userName).First(&user).Error
 	if err != nil {
 		c.JSON(400, gin.H{
 			"err": err,
@@ -192,10 +192,10 @@ func ReservePark(c *gin.Context) {
 		})
 		return
 	}
-	phone := c.GetString("phone")
+	userName := c.GetString("userName")
 	user := model.User{}
 	tx := Db.Begin()
-	err = tx.Where("phone = ?", phone).First(&user).Error
+	err = tx.Where("user_name = ?", userName).First(&user).Error
 	if err != nil {
 		c.JSON(400, gin.H{
 			"err": err,

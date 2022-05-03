@@ -30,14 +30,54 @@ func Login(c *gin.Context) {
 		return
 	}
 	user := model.User{}
-	err = Db.Where("phone = ?", req.Phone).First(&user).Error
+	err = Db.Where("user_name = ?", req.Phone).First(&user).Error
+	if err != nil || user.Password != req.VerifyCode {
+		c.JSON(400, gin.H{
+			"err": err.Error(),
+		})
+		return
+	}
+	token, err := token.GenToken(user.UserName)
+	if err != nil {
+		c.JSON(400, gin.H{
+			"err": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"token":     token,
+		"user_info": user,
+		"code":      200,
+	})
+}
+
+type RegisterReq struct {
+	Phone      string `json:"phone"`
+	VerifyCode string `json:"verify_code"`
+}
+
+func Register(c *gin.Context) {
+	req := &RegisterReq{}
+	err := c.ShouldBindJSON(req)
+	if err != nil {
+		c.JSON(400, gin.H{
+			"err": err,
+		})
+		return
+	}
+	user := model.User{}
+	err = Db.Where("user_name = ?", req.Phone).First(&user).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		user = model.User{
-			Phone:    req.Phone,
-			Role:     util.User,
-			Account:  0,
-			CarState: util.OutPark,
-			PackId:   0,
+			Role:       util.User,
+			Account:    0,
+			CarState:   util.OutPark,
+			PackId:     0,
+			UserName:   req.Phone,
+			Password:   req.VerifyCode,
+			IsComplete: false,
+			CarNumber:  "",
 		}
 		err = Db.Create(&user).Error
 		if err != nil {
@@ -46,37 +86,47 @@ func Login(c *gin.Context) {
 			})
 			return
 		}
-	}
-	token, err := token.GenToken(req.Phone)
-	if err != nil {
-		c.JSON(400, gin.H{
-			"err": err,
+		c.JSON(200, gin.H{
+			"msg":  "注册成功",
+			"code": 200,
 		})
-		return
+	} else if err != nil {
+		if err != nil {
+			c.JSON(400, gin.H{
+				"err": err.Error(),
+			})
+			return
+		}
 	}
-
-	c.JSON(200, gin.H{
-		"data": gin.H{
-			"token":     token,
-			"user_info": user,
-		},
-		"code": 200,
+	c.JSON(400, gin.H{
+		"err": "账号已存在",
 	})
+
 }
 
 func GetFrontPage(c *gin.Context) {
 	announce := model.Announce{}
 	err := Db.Last(&announce).Error
-	if err != nil {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		c.JSON(400, gin.H{
 			"err": err.Error(),
 		})
 		return
 	}
+	park := []model.CarPark{}
+	err = Db.Find(&park).Error
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		c.JSON(400, gin.H{
+			"err": err,
+		})
+		return
+	}
+	lenpark := len(park)
+	announceMsg := announce.Msg
 	c.JSON(200, gin.H{
 		"data": gin.H{
-
-			"announce": announce,
+			"total_park": lenpark,
+			"announce":   announceMsg,
 		},
 		"code": 200,
 	})

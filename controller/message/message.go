@@ -8,8 +8,10 @@ import (
 )
 
 type UserMessage struct {
-	Name   string `json:"name"`
-	IdCard string `json:"id_card"`
+	Phone     string `jons:"phone"`
+	Name      string `json:"trueName"`
+	IdCard    string `json:"idCard"`
+	CarNumber string `json:"carNumber"`
 }
 
 //上传信息
@@ -23,17 +25,20 @@ func RegisterMessage(c *gin.Context) {
 		return
 	}
 	tx := Db.Begin()
-	phone := c.GetString("phone")
+	userName := c.GetString("userName")
 	user := model.User{}
-	err = tx.Where("phone = ?", phone).First(&user).Error
+	err = tx.Where("user_name = ?", userName).First(&user).Error
 	if err != nil {
 		c.JSON(400, gin.H{
 			"err": err,
 		})
 		return
 	}
+	user.Phone = req.Phone
+	user.CarNumber = req.CarNumber
 	user.Name = req.Name
 	user.IdCard = req.IdCard
+	user.IsComplete = true
 	err = tx.Save(&user).Error
 	if err != nil {
 		c.JSON(400, gin.H{
@@ -43,7 +48,8 @@ func RegisterMessage(c *gin.Context) {
 	}
 	tx.Commit()
 	c.JSON(200, gin.H{
-		"code": 200,
-		"msg":  "上传成功",
+		"code":      200,
+		"user_info": user,
+		"msg":       "上传成功",
 	})
 }

@@ -14,10 +14,10 @@ type Claim struct {
 	Version string
 }
 
-func GenToken(phone string) (string, error) {
+func GenToken(userName string) (string, error) {
 	claim := Claim{
 		jwt.StandardClaims{
-			Issuer:   phone,
+			Issuer:   userName,
 			IssuedAt: time.Now().Unix(),
 		},
 		"v1",
