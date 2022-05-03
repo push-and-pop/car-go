@@ -32,6 +32,7 @@ func RegisterRouter(e *gin.Engine) {
 //登录
 func initLogin(r *gin.RouterGroup) {
 	r.POST("/login", login.Login)
+	r.GET("/frontPage", login.GetFrontPage)
 }
 
 //信息

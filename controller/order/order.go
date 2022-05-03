@@ -22,7 +22,7 @@ func RechargeAccount(c *gin.Context) {
 		})
 		return
 	}
-	phone := c.GetString("puhone")
+	phone := c.GetString("phone")
 	user := model.User{}
 	tx := Db.Begin()
 	err = tx.Where("phone = ?", phone).First(&user).Error
@@ -46,11 +46,64 @@ func RechargeAccount(c *gin.Context) {
 }
 
 type PayOrderReq struct {
+	Id uint `json:"ID"`
 }
 
 //支付订单
 func PayOrder(c *gin.Context) {
-
+	req := PayOrderReq{}
+	err := c.ShouldBindJSON(&req)
+	if err != nil {
+		c.JSON(400, gin.H{
+			"err": err.Error(),
+		})
+		return
+	}
+	phone := c.GetString("phone")
+	user := model.User{}
+	tx := Db.Begin()
+	err = tx.Where("phone = ?", phone).First(&user).Error
+	if err != nil {
+		c.JSON(400, gin.H{
+			"err": err.Error(),
+		})
+		return
+	}
+	Order := model.Order{}
+	err = tx.Where("id = ?", req.Id).First(&Order).Error
+	if err != nil {
+		c.JSON(400, gin.H{
+			"err": err.Error(),
+		})
+		return
+	}
+	if user.Account < Order.Price {
+		c.JSON(400, gin.H{
+			"err": "用户余额不足",
+		})
+		return
+	}
+	user.Account -= Order.Price
+	Order.State = Pay
+	err = tx.Save(&user).Error
+	if err != nil {
+		c.JSON(400, gin.H{
+			"err": err.Error(),
+		})
+		return
+	}
+	err = tx.Save(&Order).Error
+	if err != nil {
+		c.JSON(400, gin.H{
+			"err": err.Error(),
+		})
+		return
+	}
+	tx.Commit()
+	c.JSON(200, gin.H{
+		"code": 200,
+		"msg":  "支付成功",
+	})
 }
 
 type GetOrderListReq struct {
@@ -67,19 +120,28 @@ func GetOrderList(c *gin.Context) {
 		})
 		return
 	}
-	user := []model.User{}
-	err := Db.Offset(int(offset)).Limit(int(limit)).Find(&user).Error
+	phone := c.GetString("phone")
+	user := model.User{}
+	err := Db.Where("phone = ?", phone).First(&user).Error
 	if err != nil {
 		c.JSON(400, gin.H{
-			"err": err,
+			"err": err.Error(),
+		})
+		return
+	}
+	orders := []model.Order{}
+	err = Db.Offset(int(offset)).Limit(int(limit)).Where("user_id = ?", user.ID).Find(&orders).Error
+	if err != nil {
+		c.JSON(400, gin.H{
+			"err": err.Error(),
 		})
 		return
 	}
 	c.JSON(200, gin.H{
 		"code": 200,
 		"data": gin.H{
-			"total": len(user),
-			"user":  user,
+			"total": len(orders),
+			"order": orders,
 		},
 	})
 }

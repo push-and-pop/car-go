@@ -16,6 +16,8 @@ type User struct {
 	Account int64
 	//车辆状态
 	CarState int32
+	//车位Id
+	PackId uint
 }
 
 func (u *User) TableName() string {

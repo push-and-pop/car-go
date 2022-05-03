@@ -37,6 +37,7 @@ func Login(c *gin.Context) {
 			Role:     util.User,
 			Account:  0,
 			CarState: util.OutPark,
+			PackId:   0,
 		}
 		err = Db.Create(&user).Error
 		if err != nil {
@@ -53,10 +54,29 @@ func Login(c *gin.Context) {
 		})
 		return
 	}
+
 	c.JSON(200, gin.H{
 		"data": gin.H{
 			"token":     token,
 			"user_info": user,
+		},
+		"code": 200,
+	})
+}
+
+func GetFrontPage(c *gin.Context) {
+	announce := model.Announce{}
+	err := Db.Last(&announce).Error
+	if err != nil {
+		c.JSON(400, gin.H{
+			"err": err.Error(),
+		})
+		return
+	}
+	c.JSON(200, gin.H{
+		"data": gin.H{
+
+			"announce": announce,
 		},
 		"code": 200,
 	})

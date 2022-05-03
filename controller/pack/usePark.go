@@ -6,6 +6,7 @@ import (
 	"car-go/schema/model"
 	"car-go/util"
 	"car-go/util/json"
+	"math"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -28,8 +29,7 @@ func EnterPark(c *gin.Context) {
 	}
 	phone := c.GetString("phone")
 	user := model.User{}
-	tx := Db.Begin()
-	err = tx.Where("phone = ?", phone).First(&user).Error
+	err = Db.Where("phone = ?", phone).First(&user).Error
 	if err != nil {
 		c.JSON(400, gin.H{
 			"err": err,
@@ -37,22 +37,23 @@ func EnterPark(c *gin.Context) {
 		return
 	}
 	user.CarState = util.InPark
-	err = tx.Save(&user).Error
-	if err != nil {
-		c.JSON(400, gin.H{
-			"err": err,
-		})
-		return
-	}
-	park := model.CarPark{}
-	err = tx.Where("location = ? and number = ?", req.Location, req.Number).First(&park).Error
-	if err != nil {
-		c.JSON(400, gin.H{
-			"err": err,
-		})
-		return
-	}
 
+	park := model.CarPark{}
+	err = Db.Where("location = ? and number = ?", req.Location, req.Number).First(&park).Error
+	if err != nil {
+		c.JSON(400, gin.H{
+			"err": err,
+		})
+		return
+	}
+	user.PackId = park.ID
+	err = Db.Save(&user).Error
+	if err != nil {
+		c.JSON(400, gin.H{
+			"err": err,
+		})
+		return
+	}
 	if park.ParkState == Useing {
 		c.JSON(400, gin.H{
 			"err": "park is using",
@@ -67,7 +68,7 @@ func EnterPark(c *gin.Context) {
 		PackId:  park.ID,
 		StartAt: time.Now().Unix(),
 	}
-	err = tx.Create(&order).Error
+	err = Db.Create(&order).Error
 	if err != nil {
 		c.JSON(400, gin.H{
 			"err": err,
@@ -76,14 +77,13 @@ func EnterPark(c *gin.Context) {
 	}
 	park.ParkState = Useing
 	park.OrderId = order.ID
-	err = tx.Save(&park).Error
+	err = Db.Save(&park).Error
 	if err != nil {
 		c.JSON(400, gin.H{
 			"err": err,
 		})
 		return
 	}
-	tx.Commit()
 	c.JSON(200, gin.H{
 		"code": 200,
 		"msg":  "入库成功",
@@ -123,6 +123,12 @@ func LeavePark(c *gin.Context) {
 		})
 		return
 	}
+	if user.PackId != park.ID {
+		c.JSON(400, gin.H{
+			"err": "此车位不是您的车辆",
+		})
+		return
+	}
 	Order := model.Order{}
 	err = tx.Where("id = ?", park.OrderId).First(&Order).Error
 	if err != nil {
@@ -133,7 +139,7 @@ func LeavePark(c *gin.Context) {
 	}
 	now := time.Now().Unix()
 	Order.EndAt = now
-	Order.Price = (now - Order.StartAt) / 3600 * order.Price
+	Order.Price = int64(math.Ceil(float64(now-Order.StartAt)/float64(3600))) * order.Price
 	Order.State = order.UnPay
 	err = tx.Save(&Order).Error
 	if err != nil {
@@ -144,6 +150,7 @@ func LeavePark(c *gin.Context) {
 		return
 	}
 	user.CarState = util.OutPark
+	user.PackId = 0
 	err = tx.Save(&user).Error
 	if err != nil {
 		tx.Rollback()
@@ -245,6 +252,7 @@ func ReservePark(c *gin.Context) {
 		State:   order.UnPay,
 		PackId:  park.ID,
 		StartAt: req.StartTime,
+		UserId:  user.ID,
 		EndAt:   req.EndTime,
 		Price:   (req.EndTime - req.StartTime) / 3600 * order.Price,
 	}
