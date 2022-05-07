@@ -5,7 +5,7 @@ import (
 	"car-go/controller/login"
 	"car-go/controller/message"
 	"car-go/controller/order"
-	"car-go/controller/pack"
+	"car-go/controller/park"
 	"car-go/controller/user"
 	"car-go/middleware"
 
@@ -49,16 +49,17 @@ func initAnnounce(r *gin.RouterGroup) {
 
 //车位
 func initPark(r *gin.RouterGroup) {
-	r.POST("/park/creat", pack.CreatCarPark)
-	r.GET("/park/get", pack.GetParkList)
-	r.POST("/park/delete", pack.DeleteParkById)
+	r.POST("/park/creat", park.CreatCarPark)
+	r.GET("/park/get", park.GetParkList)
+	r.POST("/park/delete", park.DeleteParkById)
 }
 
 //用户车位
 func initUserPark(r *gin.RouterGroup) {
-	r.POST("/park/enter", pack.EnterPark)
-	r.POST("/park/leave", pack.LeavePark)
-	r.POST("/park/reserve", pack.ReservePark)
+	r.POST("/park/enter", park.EnterPark)
+	r.POST("/park/leave", park.LeavePark)
+	r.POST("/park/reserve", park.ReservePark)
+	r.GET("/park/getself", park.GetMyPark)
 }
 
 func initUser(r *gin.RouterGroup) {

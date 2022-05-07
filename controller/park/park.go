@@ -1,4 +1,4 @@
-package pack
+package park
 
 import (
 	. "car-go/schema"
