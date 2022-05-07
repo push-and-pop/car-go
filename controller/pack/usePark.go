@@ -140,7 +140,14 @@ func LeavePark(c *gin.Context) {
 	now := time.Now().Unix()
 	Order.EndAt = now
 	Order.Price = int64(math.Ceil(float64(now-Order.StartAt)/float64(3600))) * order.Price
-	Order.State = order.UnPay
+	Order.State = order.Pay
+	if user.Account < Order.Price {
+		tx.Rollback()
+		c.JSON(400, gin.H{
+			"err": "用户余额不足，出库失败",
+		})
+		return
+	}
 	err = tx.Save(&Order).Error
 	if err != nil {
 		tx.Rollback()
@@ -149,6 +156,7 @@ func LeavePark(c *gin.Context) {
 		})
 		return
 	}
+	user.Account -= Order.Price
 	user.CarState = util.OutPark
 	user.PackId = 0
 	err = tx.Save(&user).Error
@@ -160,6 +168,7 @@ func LeavePark(c *gin.Context) {
 		return
 	}
 	park.ParkState = Open
+	park.OrderId = 0
 	err = tx.Save(&park).Error
 	if err != nil {
 		tx.Rollback()
@@ -268,5 +277,38 @@ func ReservePark(c *gin.Context) {
 	c.JSON(200, gin.H{
 		"code": 200,
 		"msg":  "预定成功",
+	})
+}
+
+func GetMyPark(c *gin.Context) {
+	userName := c.GetString("userName")
+	user := model.User{}
+	err := Db.Where("user_name = ?", userName).First(&user).Error
+	if err != nil {
+		c.JSON(400, gin.H{
+			"err": err,
+		})
+		return
+	}
+	park := model.CarPark{}
+	err = Db.Where("id = ?", user.PackId).First(&park).Error
+	if err != nil {
+		c.JSON(400, gin.H{
+			"err": err,
+		})
+		return
+	}
+	order := model.Order{}
+	err = Db.Where("id = ?", park.OrderId).First(&order).Error
+	if err != nil {
+		c.JSON(400, gin.H{
+			"err": err,
+		})
+		return
+	}
+	c.JSON(200, gin.H{
+		"code":  200,
+		"order": order,
+		"park":  park,
 	})
 }

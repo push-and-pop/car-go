@@ -40,3 +40,29 @@ func GetUserList(c *gin.Context) {
 		},
 	})
 }
+
+type DeleteUserReq struct {
+	Id uint `json:"id"`
+}
+
+func DeleteUser(c *gin.Context) {
+	req := &DeleteUserReq{}
+	err := c.ShouldBindJSON(req)
+	if err != nil {
+		c.JSON(400, gin.H{
+			"err": err.Error(),
+		})
+		return
+	}
+	err = Db.Delete(&model.User{}, req.Id).Error
+	if err != nil {
+		c.JSON(400, gin.H{
+			"err": err.Error(),
+		})
+		return
+	}
+	c.JSON(200, gin.H{
+		"code": 200,
+		"msg":  "删除成功",
+	})
+}
