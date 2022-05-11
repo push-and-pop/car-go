@@ -96,6 +96,7 @@ func Register(c *gin.Context) {
 			"msg":  "注册成功",
 			"code": 200,
 		})
+		return
 	} else if err != nil {
 		if err != nil {
 			c.JSON(400, gin.H{
