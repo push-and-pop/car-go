@@ -31,9 +31,15 @@ func Login(c *gin.Context) {
 	}
 	user := model.User{}
 	err = Db.Where("user_name = ?", req.Phone).First(&user).Error
-	if err != nil || user.Password != req.VerifyCode {
+	if err != nil {
 		c.JSON(400, gin.H{
 			"err": err.Error(),
+		})
+		return
+	}
+	if user.Password != req.VerifyCode {
+		c.JSON(400, gin.H{
+			"err": "密码错误",
 		})
 		return
 	}
