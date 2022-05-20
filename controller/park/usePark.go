@@ -6,10 +6,12 @@ import (
 	"car-go/schema/model"
 	"car-go/util"
 	"car-go/util/json"
+	"errors"
 	"math"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type EnterParkReq struct {
@@ -292,7 +294,7 @@ func GetMyPark(c *gin.Context) {
 	}
 	park := model.CarPark{}
 	err = Db.Where("id = ?", user.PackId).First(&park).Error
-	if err != nil {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		c.JSON(400, gin.H{
 			"err": err,
 		})
@@ -300,15 +302,17 @@ func GetMyPark(c *gin.Context) {
 	}
 	order := model.Order{}
 	err = Db.Where("id = ?", park.OrderId).First(&order).Error
-	if err != nil {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		c.JSON(400, gin.H{
 			"err": err,
 		})
 		return
 	}
+	now := time.Now().Unix()
 	c.JSON(200, gin.H{
 		"code":  200,
 		"order": order,
 		"park":  park,
+		"price": int64(math.Ceil(float64(now-order.StartAt)/float64(3600))) * order.Price,
 	})
 }
