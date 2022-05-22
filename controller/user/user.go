@@ -54,7 +54,7 @@ func DeleteUser(c *gin.Context) {
 		})
 		return
 	}
-	err = Db.Delete(&model.User{}, req.Id).Error
+	err = Db.Unscoped().Delete(&model.User{}, req.Id).Error
 	if err != nil {
 		c.JSON(400, gin.H{
 			"err": err.Error(),
@@ -64,5 +64,51 @@ func DeleteUser(c *gin.Context) {
 	c.JSON(200, gin.H{
 		"code": 200,
 		"msg":  "删除成功",
+	})
+}
+
+type UpdateUserReq struct {
+	Phone     string `jons:"phone"`
+	Name      string `json:"trueName"`
+	IdCard    string `json:"idCard"`
+	CarNumber string `json:"carNumber"`
+}
+
+func UpdateUser(c *gin.Context) {
+	req := &UpdateUserReq{}
+	err := c.ShouldBindJSON(req)
+	if err != nil {
+		c.JSON(400, gin.H{
+			"err": err.Error(),
+		})
+		return
+	}
+	tx := Db.Begin()
+	userName := c.GetString("userName")
+	user := model.User{}
+	err = tx.Where("user_name = ?", userName).First(&user).Error
+	if err != nil {
+		c.JSON(400, gin.H{
+			"err": err,
+		})
+		return
+	}
+	user.Phone = req.Phone
+	user.CarNumber = req.CarNumber
+	user.Name = req.Name
+	user.IdCard = req.IdCard
+	user.IsComplete = true
+	err = tx.Save(&user).Error
+	if err != nil {
+		c.JSON(400, gin.H{
+			"err": err,
+		})
+		return
+	}
+	tx.Commit()
+	c.JSON(200, gin.H{
+		"code":      200,
+		"user_info": user,
+		"msg":       "修改成功",
 	})
 }

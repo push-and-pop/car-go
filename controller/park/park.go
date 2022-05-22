@@ -90,7 +90,7 @@ func DeleteParkById(c *gin.Context) {
 		})
 		return
 	}
-	err = Db.Delete(&model.CarPark{}, req.Id).Error
+	err = Db.Unscoped().Delete(&model.CarPark{}, req.Id).Error
 	if err != nil {
 		c.JSON(400, gin.H{
 			"err": err,

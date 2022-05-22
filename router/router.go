@@ -64,6 +64,8 @@ func initUserPark(r *gin.RouterGroup) {
 
 func initUser(r *gin.RouterGroup) {
 	r.GET("/user/get", user.GetUserList)
+	r.POST("/user/del", user.DeleteUser)
+	r.POST("/user/update", user.UpdateUser)
 }
 
 func initOrder(r *gin.RouterGroup) {
