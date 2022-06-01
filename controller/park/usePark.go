@@ -49,12 +49,22 @@ func EnterPark(c *gin.Context) {
 		return
 	}
 	user.PackId = park.ID
-	err = Db.Save(&user).Error
-	if err != nil {
-		c.JSON(400, gin.H{
-			"err": err,
-		})
-		return
+	var isReserve bool
+	if user.ReserveParkId == park.ID {
+		var interval model.TimeInterval
+		now := time.Now().Unix()
+		err = json.Unmarshal([]byte(park.TimeInterval), &interval)
+		if err != nil {
+			c.JSON(400, gin.H{
+				"err": err.Error(),
+			})
+			return
+		}
+		for _, value := range interval {
+			if now >= value.StartTime && now <= value.EndTime {
+				isReserve = true
+			}
+		}
 	}
 	if park.ParkState == Useing {
 		c.JSON(400, gin.H{
@@ -62,23 +72,32 @@ func EnterPark(c *gin.Context) {
 		})
 		return
 	}
-
-	order := model.Order{
-		Type:    order.Continue,
-		State:   order.Going,
-		UserId:  user.ID,
-		PackId:  park.ID,
-		StartAt: time.Now().Unix(),
-	}
-	err = Db.Create(&order).Error
+	user.EnterAt = time.Now().Unix()
+	err = Db.Save(&user).Error
 	if err != nil {
 		c.JSON(400, gin.H{
 			"err": err,
 		})
 		return
 	}
+	if !isReserve { //如果不是预约
+		order := model.Order{
+			Type:    order.Continue,
+			State:   order.Going,
+			UserId:  user.ID,
+			PackId:  park.ID,
+			StartAt: time.Now().Unix(),
+		}
+		err = Db.Create(&order).Error
+		if err != nil {
+			c.JSON(400, gin.H{
+				"err": err,
+			})
+			return
+		}
+		park.OrderId = order.ID
+	}
 	park.ParkState = Useing
-	park.OrderId = order.ID
 	err = Db.Save(&park).Error
 	if err != nil {
 		c.JSON(400, gin.H{
@@ -131,6 +150,88 @@ func LeavePark(c *gin.Context) {
 		})
 		return
 	}
+	now := time.Now().Unix()
+	var extraPrice int64
+
+	if user.ReserveParkId == park.ID {
+		//取出时间段
+		var interval model.TimeInterval
+		err = json.Unmarshal([]byte(park.TimeInterval), &interval)
+		if err != nil {
+			c.JSON(400, gin.H{
+				"err": err.Error(),
+			})
+			return
+		}
+		for _, value := range interval {
+			if user.EnterAt >= value.StartTime && now <= value.EndTime { //在时间段内出库
+				user.CarState = util.OutPark
+				user.PackId = 0
+				err = tx.Save(&user).Error
+				if err != nil {
+					tx.Rollback()
+					c.JSON(400, gin.H{
+						"err": err,
+					})
+					return
+				}
+				park.ParkState = Open
+				park.OrderId = 0
+				err = tx.Save(&park).Error
+				if err != nil {
+					tx.Rollback()
+					c.JSON(400, gin.H{
+						"err": err,
+					})
+					return
+				}
+				tx.Commit()
+				c.JSON(200, gin.H{
+					"code": 200,
+					"msg":  "出库成功",
+				})
+				return
+			}
+			if user.EnterAt >= value.StartTime && now >= value.EndTime { //超过时间段
+				extraPrice = int64(math.Ceil(float64(now-value.EndTime)/float64(3600))) * order.Price
+				if user.Account < extraPrice {
+					tx.Rollback()
+					c.JSON(400, gin.H{
+						"err": "用户余额不足，出库失败",
+					})
+					return
+				}
+				user.Account -= extraPrice
+				user.CarState = util.OutPark
+				user.PackId = 0
+				err = tx.Save(&user).Error
+				if err != nil {
+					tx.Rollback()
+					c.JSON(400, gin.H{
+						"err": err,
+					})
+					return
+				}
+				park.ParkState = Open
+				park.OrderId = 0
+				err = tx.Save(&park).Error
+				if err != nil {
+					tx.Rollback()
+					c.JSON(400, gin.H{
+						"err": err,
+					})
+					return
+				}
+				tx.Commit()
+				c.JSON(200, gin.H{
+					"code": 200,
+					"msg":  "出库成功",
+				})
+				break
+			}
+		}
+	}
+
 	Order := model.Order{}
 	err = tx.Where("id = ?", park.OrderId).First(&Order).Error
 	if err != nil {
@@ -139,7 +240,7 @@ func LeavePark(c *gin.Context) {
 		})
 		return
 	}
-	now := time.Now().Unix()
+
 	Order.EndAt = now
 	Order.Price = int64(math.Ceil(float64(now-Order.StartAt)/float64(3600))) * order.Price
 	Order.State = order.Pay
@@ -268,6 +369,15 @@ func ReservePark(c *gin.Context) {
 		Price:   (req.EndTime - req.StartTime) / 3600 * order.Price,
 	}
 	err = tx.Create(&order).Error
+	if err != nil {
+		tx.Rollback()
+		c.JSON(400, gin.H{
+			"err": err,
+		})
+		return
+	}
+	user.ReserveParkId = park.ID
+	err = tx.Create(&user).Error
 	if err != nil {
 		tx.Rollback()
 		c.JSON(400, gin.H{

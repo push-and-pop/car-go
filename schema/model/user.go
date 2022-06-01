@@ -23,6 +23,10 @@ type User struct {
 	UserName   string `gorm:"uniqueIndex;size:100"`
 	Password   string
 	IsComplete bool
+	//预约车位id
+	ReserveParkId uint
+	//入库时间
+	EnterAt int64
 }
 
 func (u *User) TableName() string {
